@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/spawn-flowise/spawn-flowise/internal/config"
@@ -161,8 +162,22 @@ func RunSpawn(engine *container.Engine, count int) error {
 	return nil
 }
 
-// RunStop stops and removes all flowise-instance-NN containers and their networks.
-func RunStop(engine *container.Engine) error {
+// RunStop parses a stop argument and stops either all instances or a single one.
+// Use "all" to stop every instance; use a positive integer N to stop
+// flowise-instance-<N-1>.
+func RunStop(engine *container.Engine, arg string) error {
+	if arg == "all" {
+		return runStopAll(engine)
+	}
+	n, err := strconv.Atoi(arg)
+	if err != nil || n < 1 {
+		return fmt.Errorf("invalid stop argument %q: use 'all' or a positive integer", arg)
+	}
+	return runStopOne(engine, n-1)
+}
+
+// runStopAll stops and removes all flowise-instance-NN containers and their networks.
+func runStopAll(engine *container.Engine) error {
 	lk, release, err := runtimeLock()
 	if err != nil {
 		return err
@@ -202,6 +217,38 @@ func RunStop(engine *container.Engine) error {
 	return nil
 }
 
+// runStopOne stops and removes a single flowise-instance-NN container and its network.
+func runStopOne(engine *container.Engine, n int) error {
+	lk, release, err := runtimeLock()
+	if err != nil {
+		return err
+	}
+	defer release()
+	_ = lk
+
+	info, err := config.NewInstanceInfo(n)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Stopping %s...\n", info.ServiceName)
+	if err := engine.StopContainer(context.Background(), info.ServiceName); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: failed to stop %s: %v\n", info.ServiceName, err)
+	}
+	fmt.Printf("Removing container %s...\n", info.ServiceName)
+	if err := engine.RemoveContainer(context.Background(), info.ServiceName); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: failed to remove %s: %v\n", info.ServiceName, err)
+	}
+
+	fmt.Printf("Removing network %s...\n", info.NetworkName)
+	if err := engine.NetworkRemove(context.Background(), info.NetworkName); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: failed to remove network %s: %v\n", info.NetworkName, err)
+	}
+
+	fmt.Println("Stop complete.")
+	return nil
+}
+
 // RunHold stops instances and moves their data directories to ~/.bkpflowiseNN.
 func RunHold(engine *container.Engine) error {
 	lk, release, err := runtimeLock()
@@ -211,7 +258,7 @@ func RunHold(engine *container.Engine) error {
 	defer release()
 	_ = lk
 
-	if err := RunStop(engine); err != nil {
+	if err := runStopAll(engine); err != nil {
 		return err
 	}
 

@@ -39,7 +39,8 @@ Acts as a dynamic template using environment variable substitution for isolation
     - Instances are round-robin assigned to a pool of Docker networks (`flowise-default-XX`).
     - Sequential spawning (30s delay) prevents host resource exhaustion.
 3.  **Stop**:
-    - `stop` halts all `flowise-instance-NN` containers, removes them, and tears down their `flowise-default-XX` networks so subsequent `spawn` commands start cleanly.
+    - `stop all` halts all `flowise-instance-NN` containers, removes them, and tears down their `flowise-default-XX` networks so subsequent `spawn` commands start cleanly.
+    - `stop <N>` halts only `flowise-instance-<N-1>` (instance numbering is 0-based), removes that container, and attempts to remove its network.
 4.  **Persistence**: Data is stored in `~/.flowiseNN`, ensuring state survives restarts.
 5.  **Hold/Unhold**:
     - **Hold**: Gracefully stops instances and renames data directories to `~/.bkpflowiseNN` using secure move operations.

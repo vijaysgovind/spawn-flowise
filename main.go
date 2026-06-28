@@ -19,7 +19,8 @@ Usage:
 Commands:
   check                 Validate engine reachability and host resources.
   spawn <N>             Start N isolated Flowise instances.
-  stop                  Stop all flowise-instance-NN containers.
+  stop all              Stop all flowise-instance-NN containers.
+  stop <N>              Stop flowise-instance-<N-1> only.
   hold                  Stop instances and move data dirs to ~/.bkpflowiseNN.
   unhold                Restore held data dirs from ~/.bkpflowiseNN.
   cleanup               Stop containers, archive data, and remove state.
@@ -62,7 +63,11 @@ func main() {
 		}
 		err = cmd.RunSpawn(engine, n)
 	case "stop":
-		err = cmd.RunStop(engine)
+		if len(args) < 2 {
+			fmt.Fprintf(os.Stderr, "Usage: %s stop all | %s stop <N> (stops flowise-instance-<N-1>)\n", os.Args[0], os.Args[0])
+			os.Exit(1)
+		}
+		err = cmd.RunStop(engine, args[1])
 	case "hold":
 		err = cmd.RunHold(engine)
 	case "unhold":

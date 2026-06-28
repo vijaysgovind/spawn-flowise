@@ -86,7 +86,7 @@ chmod +x flowise-spawn
 4. **Stop all instances when you are done:**
 
    ```bash
-   ./flowise-spawn stop
+   ./flowise-spawn stop all
    ```
 
 ---
@@ -105,7 +105,8 @@ If omitted, `docker` is used.
 |--------|-------------|
 | `check` | Validate engine reachability, total RAM, and base port availability. |
 | `spawn <N>` | Create and start `N` isolated Flowise instances (0-based numbering). |
-| `stop` | Stop and remove all `flowise-instance-NN` containers and their networks. |
+| `stop all` | Stop and remove all `flowise-instance-NN` containers and their networks. |
+| `stop <N>` | Stop and remove `flowise-instance-<N-1>` only. |
 | `hold` | Stop instances and rename data directories from `~/.flowiseNN` to `~/.bkpflowiseNN`. |
 | `unhold` | Restore held data directories from `~/.bkpflowiseNN` back to `~/.flowiseNN`. |
 | `cleanup` | Remove all containers and networks, archive active data to `~/flowise_backup/`, then delete it. Held data is preserved. |
@@ -124,10 +125,17 @@ This creates instances `00` through `04` on host ports `3001`–`3005`. A 30-sec
 
 ### Stop and restart cleanly
 
-`stop` removes containers and networks but leaves data intact:
+`stop all` removes all containers and networks but leaves data intact:
 
 ```bash
-./flowise-spawn stop
+./flowise-spawn stop all
+```
+
+To stop a single instance, pass its 1-based index (`stop <N>` stops `flowise-instance-<N-1>`):
+
+```bash
+# Stop only flowise-instance-00
+./flowise-spawn stop 1
 ```
 
 Later, you can spawn again. Existing data directories are reused, so state survives the stop.
