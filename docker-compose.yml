@@ -1,0 +1,54 @@
+services:
+    flowise:
+        image: flowiseai/flowise:latest
+        pull_policy: always
+        container_name: ${CONTAINER_NAME:-flowise}
+        restart: always
+        environment:
+            - PORT=${PORT}
+
+            # DATABASE
+            - DATABASE_PATH=${DATABASE_PATH}
+
+            # SECRET KEYS
+            - SECRETKEY_PATH=${SECRETKEY_PATH}
+
+            # LOGGING
+            - DEBUG=${DEBUG}
+            - LOG_PATH=${LOG_PATH}
+
+            # STORAGE
+            - BLOB_STORAGE_PATH=${BLOB_STORAGE_PATH}
+
+            # AUTH PARAMETERS
+            - JWT_AUTH_TOKEN_SECRET=${JWT_AUTH_TOKEN_SECRET}
+            - JWT_REFRESH_TOKEN_SECRET=${JWT_REFRESH_TOKEN_SECRET}
+            - JWT_ISSUER=${JWT_ISSUER}
+            - JWT_AUDIENCE=${JWT_AUDIENCE}
+            - JWT_TOKEN_EXPIRY_IN_MINUTES=${JWT_TOKEN_EXPIRY_IN_MINUTES}
+            - JWT_REFRESH_TOKEN_EXPIRY_IN_MINUTES=${JWT_REFRESH_TOKEN_EXPIRY_IN_MINUTES}
+            - EXPIRE_AUTH_TOKENS_ON_RESTART=${EXPIRE_AUTH_TOKENS_ON_RESTART}
+            - EXPRESS_SESSION_SECRET=${EXPRESS_SESSION_SECRET}
+            - PASSWORD_RESET_TOKEN_EXPIRY_IN_MINS=${PASSWORD_RESET_TOKEN_EXPIRY_IN_MINS}
+            - PASSWORD_SALT_HASH_ROUNDS=${PASSWORD_SALT_HASH_ROUNDS}
+            - TOKEN_HASH_SECRET=${TOKEN_HASH_SECRET}
+
+
+        ports:
+            - '${HOST_PORT:-${PORT}}:${PORT}'
+        healthcheck:
+            test: ['CMD', 'curl', '-f', 'http://0.0.0.0:${PORT}/api/v1/ping']
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 30s
+        volumes:
+            - ${HOST_PATH:-~/.flowise}:${CONTAINER_PATH:-/root/.flowise}
+        networks:
+            - flowise_network
+        entrypoint: /bin/sh -c "sleep 3; flowise start"
+
+networks:
+    flowise_network:
+        name: ${NETWORK_NAME}
+        external: true
